@@ -1,0 +1,47 @@
+,0
+Start,2018-12-31 00:00:00
+End,2022-01-14 00:00:00
+Duration,1110 days 00:00:00
+Exposure Time [%],0.0
+Equity Final [$],100000.0
+Equity Peak [$],100000.0
+Return [%],0.0
+Buy & Hold Return [%],1476.9381367954156
+Return (Ann.) [%],0.0
+Volatility (Ann.) [%],0.0
+Sharpe Ratio,
+Sortino Ratio,
+Calmar Ratio,
+Max. Drawdown [%],-0.0
+Avg. Drawdown [%],
+Max. Drawdown Duration,
+Avg. Drawdown Duration,
+# Trades,0
+Win Rate [%],
+Best Trade [%],
+Worst Trade [%],
+Avg. Trade [%],
+Max. Trade Duration,
+Avg. Trade Duration,
+Profit Factor,
+Expectancy [%],
+SQN,
+_strategy,Custom
+_equity_curve,"              Equity  DrawdownPct  DrawdownDuration
+Date                                               
+2018-12-31  100000.0          0.0               NaN
+2019-01-02  100000.0          0.0               NaN
+2019-01-03  100000.0          0.0               NaN
+2019-01-04  100000.0          0.0               NaN
+2019-01-07  100000.0          0.0               NaN
+...              ...          ...               ...
+2022-01-10  100000.0          0.0               NaN
+2022-01-11  100000.0          0.0               NaN
+2022-01-12  100000.0          0.0               NaN
+2022-01-13  100000.0          0.0               NaN
+2022-01-14  100000.0          0.0               NaN
+
+[768 rows x 3 columns]"
+_trades,"Empty DataFrame
+Columns: [Size, EntryBar, ExitBar, EntryPrice, ExitPrice, PnL, ReturnPct, EntryTime, ExitTime, Duration]
+Index: []"
