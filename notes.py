@@ -6,18 +6,23 @@ import pandas as pd
 def app():
     st.title('Release Notes')
     st.write("""
-        - 2022.01.15 First version 1.0 go online! 
+        - 2022.01.15 First version 1.0 go online!
+        - 2022.01.16 version 1.1 - fixed some of the minor issues
 
         - Cryptocurrency
             1. Candlestick and Analysis Chart
             2. Add Technical Indicators
-                - Can define custom indicators 
+                - Available Indicators: SMA 20, 60, 120, EMA 20, 60, 120, RSI, Bollinger Band
+                - Can define two types of custom indicators 
                     - SMA
                     - EMA
             3. Define Buy/Sell Strategy
                 - Momentum Indicators (Eg. RSI < 30)
                 - Volatility Indicators (Eg. Close < Lower)
-                - Trend Indicators (Eg. EMA20 > EMA120, Close crossover EMA10)
-                - Candle price comparison (Eg. Close > High (1 day ago))
+                - Trend Indicators vs. Indictors (Eg. EMA20 crossup/crossdown EMA120)
+                - Price vs. Indicators (Eg. Close > EMA120)
             4. Backtesting Strategy
+                - Initial Invested Amount
+                - Buy only when there is no position
+                - Sell only when there is no position
             """)
