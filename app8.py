@@ -57,11 +57,10 @@ def app():
         data_raw = yf.download(dropdown, start, now,
                                interval=interval[0], auto_adjust=True)
 
-        # st.write('Raw Data is', data_raw)
-        # st.write('Type', type(data_raw))
         # ! Choose different interval will give different default index column name
-
         data = data_raw
+        # st.write('DataFrame is:', data)
+
         # data = data.reset_index()
         # data = data.rename(columns={'Date': 'Datetime'})
 
@@ -78,16 +77,6 @@ def app():
     #     cumret = dfnew.cumprod() - 1
     #     cumret = cumret.fillna(0)
     #     st.line_chart(cumret)
-
-    # def relativeret(df):
-    #     rel = df.pct_change()
-    #     cumret = (1+rel).cumprod() - 1
-    #     cumret = cumret.fillna(0)
-    #     return cumret
-
-    # df = relativeret(data['Close'])
-
-    # #    st.bar_chart(volume)
 
     # Plot Candlestick Chart
     fig = make_subplots(
@@ -124,18 +113,24 @@ def app():
     ################################################################################################################
     st.subheader('2. Choose Technical Indicators or Define Custom Indicators')
 
-    ta_list = ['EMA20', 'EMA60', 'EMA120', 'SMA20', 'SMA60', 'SMA120', 'RSI', 'Upper',
-               'Middle', 'Lower', 'Custom']
-    dropdown_ta = st.multiselect(
-        'Please add Indicator:', ta_list, default=None)
-
     # Initialization of session variable
     if 'trend_indicator' not in st.session_state:
         st.session_state.trend_indicator = ''
-        st.write('Session initial value is', st.session_state.trend_indicator)
+        # st.write('Session initial value is', st.session_state.trend_indicator)
     if 'trend_period' not in st.session_state:
         st.session_state.trend_period = 0
-        st.write('Trend intial value is', st.session_state.trend_period)
+        # st.write('Trend intial value is', st.session_state.trend_period)
+
+    ta_list = ['EMA20', 'EMA60', 'EMA120', 'SMA20', 'SMA60',
+               'SMA120', 'RSI', 'Upper', 'Lower', 'Custom']
+    if len(st.session_state.trend_indicator) > 0:
+        ta_list.insert(
+            0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
+        data[st.session_state.trend_indicator+str(st.session_state.trend_period)] = eval(
+            "getattr(abstract, f'{st.session_state.trend_indicator}')")(data.Close, st.session_state.trend_period)
+
+    dropdown_ta = st.multiselect(
+        'Please add Indicator:', ta_list, default=None)
 
     if 'Custom' in dropdown_ta:
         with st.form(key='custom_indicator'):
@@ -165,21 +160,17 @@ def app():
 
             # st.write(st.session_state.trend_indicator)
             # st.write(st.session_state.trend_period)
+            #! data[SMA10] needs to be defined first regardless of operator
             data[st.session_state.trend_indicator+str(st.session_state.trend_period)] = eval(
                 "getattr(abstract, f'{st.session_state.trend_indicator}')")(data.Close, st.session_state.trend_period)
-            # setattr(data, f'{st.session_state.trend_indicator}{st.session_state.trend_period}, eval("getattr(abstract, f'{st.session_state.trend_indicator}')")(data.Close, st.session_state.trend_period))
-
-            # if 'data[st.session_state.trend_indicator+str(st.session_state.trend_period)]' not in st.session_state:
-            #     st.session_state.data[st.session_state.trend_indicator+str(
-            #         st.session_state.trend_period)] = data[st.session_state.trend_indicator+str(st.session_state.trend_period)]
-            # data[trend_indicator+str(trend_period)] = eval(
-            #     "getattr(abstract, f'{trend_indicator}')")(data.Close, trend_period)
-
-            # getattr(talib, f'{trend_indicator}'(data['Close'], trend_period))
-            st.write(f'Custom indicator {trend_indicator}{trend_period} has been created successfully',
-                     data[trend_indicator+str(trend_period)])
-            ta_list.insert(0, f'{trend_indicator}{trend_period}')
-            st.write(ta_list)
+            # st.session_state.data[st.session_state.trend_indicator+str(
+            #     st.session_state.trend_period)] = data[st.session_state.trend_indicator+str(st.session_state.trend_period)]
+            st.write('Customer indicator is writen in memory')
+            st.write(
+                f'Custom indicator {trend_indicator}{trend_period} has been created successfully', data[st.session_state.trend_indicator+str(st.session_state.trend_period)])
+            ta_list = ta_list.insert(
+                0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
+            # st.write(ta_list)
             # ta_list.insert(0, trend_indicator+str(trend_period))
 
     data['SMA20'] = talib.SMA(data['Close'], 20)
@@ -225,19 +216,24 @@ def app():
 
                 with col1:
                     # Momentum indicator selection
+                    # momentum_buy = st.multiselect(
+                    #     'Momentum Indicators:', talib.get_function_groups()['Momentum Indicators'])
                     momentum_buy = st.multiselect(
-                        'Momentum Indicators:', talib.get_function_groups()['Momentum Indicators'])
+                        'Momentum Indicators:', ['RSI'])
                     price_buy = st.multiselect('Price:', [
                         'Close', 'Open', 'High', 'Low'])
-                    trend1_buy_list = ['Close', 'Open', 'High', 'Low',
-                                       'EMA20', 'EMA60', 'EMA120', 'SMA20', 'SMA60', 'SMA120']
+                    # Define buy list and insert the custom indicator if there is any
+                    trend1_buy_list = ['EMA20', 'EMA60',
+                                       'EMA120', 'SMA20', 'SMA60', 'SMA120']
                     if len(st.session_state.trend_indicator) > 0:
                         trend1_buy_list.insert(
                             0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
                     trend1_buy = st.multiselect(
                         'Trend Indicators:', trend1_buy_list, key='Trend1')
-                    price1_comp_buy = st.multiselect('Price:', [
-                        'Close', 'Open', 'High', 'Low'], key='Price1 Compare Buy')
+                    # price1_comp_buy = st.multiselect('Price:', [
+                    #     'Close', 'Open', 'High', 'Low'], key='Price1 Compare Buy')
+                    price1_buy = st.multiselect('Price:', [
+                        'Close', 'Open', 'High', 'Low'], key='Price 1 Buy')
 
                 with col2:
                     # Momentum indicator selection
@@ -246,9 +242,9 @@ def app():
                     operator2_buy = st.multiselect(
                         'Operator:', ['>', '<', '==', '>=', '<='], key='Operator 2')
                     operator3_buy = st.multiselect(
-                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossover'], key='Operator 3')
+                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossup'], key='Operator 3')
                     operator4_buy = st.multiselect(
-                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossover'], key='Operator 4')
+                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossup'], key='Operator 4')
 
                 with col3:
                     # Momentum indicator selection
@@ -260,36 +256,21 @@ def app():
                     # indicator_volatility_list.insert(1, 'BB-Lower')
                     # indicator_volatility_list.insert(1, 'BB-Upper')
                     volatility_buy = st.multiselect(
-                        'Volatility Indicators:', ['ATR', 'Upper', 'Lower', 'NATR', 'TRANGE'])
-                    trend2_buy_list = ['Close', 'EMA20', 'EMA60',
+                        'Volatility Indicators:', ['Upper', 'Lower'])
+                    trend2_buy_list = ['EMA20', 'EMA60',
                                        'EMA120', 'SMA20', 'SMA60', 'SMA120']
-                    if len(st.session_state.trend_indicator) > 0:
-                        trend2_buy_list.insert(
-                            0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
+                    # if len(st.session_state.trend_indicator) > 0:
+                    #     trend2_buy_list = trend2_buy_list.insert(
+                    #         0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
+                    # st.write('trend2_buy_list', trend2_buy_list)
                     trend2_buy = st.multiselect(
-                        'Trend Indicators:', trend2_buy_list, key='Trend2')
-                    price2_comp_buy = st.multiselect('Previous price (1 day ago):', [
-                        'Close', 'Open', 'High', 'Low'], key='Price2 Compare Buy')
-            # st.write('Outsider Container 1')
-            # container3 = st.container()
-            # with container3:
-            #     check = st.checkbox('Trend Indicator')
-            #     if check:
+                        'Trend Indicators:', trend1_buy_list, key='Trend2')
 
-            #         st.write('Please Define Buy Criteria (Container 3)')
-            #         col1, col2, col3 = st.columns(3)
-            #         with col1:
-            #             trend1_buy = st.multiselect('Trend Indicators:', ['Close',
-            #                                                               'EMA', 'SMA'], key='Trend1a')
-            #             if trend1_buy == 'EMA':
-            #                 period1 = st.text_input('Period', key='period1')
+                    trend3_buy = st.multiselect(
+                        'Trend Indicators:', trend1_buy_list, key='Trend3')
+                    # price2_comp_buy = st.multiselect('Previous price (1 day ago):', [
+                    #     'Close', 'Open', 'High', 'Low'], key='Price2 Compare Buy')
 
-            #         with col2:
-            #             operator3_buy = st.multiselect(
-            #                 'Operator:', ['>', '<', '==', '>=', '<=', 'crossover'], key='Operator 3a')
-            #         with col3:
-            #             trend1_buy = st.multiselect('Trend Indicators:', ['Close',
-            #                                                               'EMA', 'SMA'], key='Trend2a')
             #---------------------------------------------------------------------------------------------------#
             # Sell Criteria
             container2 = st.container()
@@ -299,14 +280,23 @@ def app():
                 with col1:
                     # Momentum indicator selection
                     momentum_sell = st.multiselect(
-                        'Momentum Indicators:', talib.get_function_groups()['Momentum Indicators'], key='Sell')
+                        'Momentum Indicators:', ['RSI'], key='Sell')
                     # Volatility indicator selection
                     price_sell = st.multiselect('Price:', [
                         'Close', 'Open', 'High', 'Low'], key='Sell')
-                    trend1_sell = st.multiselect('Trend Indicators:', [
-                        'Close', 'EMA20', 'EMA60', 'EMA120', 'SMA20', 'SMA60', 'SMA120'], key='Trend1_sell')
-                    price1_comp_sell = st.multiselect('Price:', [
-                        'Close', 'Open', 'High', 'Low'], key='Price1 Compare Sell')
+
+                    # Define sell list and buy list are the same, and insert the custom indicator if there is any
+                    trend1_sell_list = ['EMA20', 'EMA60',
+                                        'EMA120', 'SMA20', 'SMA60', 'SMA120']
+                    if len(st.session_state.trend_indicator) > 0:
+                        trend1_sell_list.insert(
+                            0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
+                    trend1_sell = st.multiselect(
+                        'Trend Indicators:', trend1_sell_list, key='Trend1_sell')
+                    # price1_comp_sell = st.multiselect('Price:', [
+                    #     'Close', 'Open', 'High', 'Low'], key='Price1 Compare Sell')
+                    price1_sell = st.multiselect('Price:', [
+                        'Close', 'Open', 'High', 'Low'], key='Price 1 Sell')
 
                 with col2:
                     # Momentum indicator selection
@@ -316,9 +306,9 @@ def app():
                     operator2_sell = st.multiselect(
                         'Operator:', ['>', '<', '==', '>=', '<='], key='Operator 2_sell')
                     operator3_sell = st.multiselect(
-                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossover'], key='Operator 3_sell')
+                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossdown'], key='Operator 3_sell')
                     operator4_sell = st.multiselect(
-                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossover'], key='Operator 4_sell')
+                        'Operator:', ['>', '<', '==', '>=', '<=', 'crossdown'], key='Operator 4_sell')
 
                 with col3:
                     # Momentum indicator selection
@@ -332,84 +322,107 @@ def app():
                     # indicator_volatility_list.insert(1, 'BB-Upper')
                     # Volatility indicator selection
                     volatility_sell = st.multiselect(
-                        'Volatility Indicators:', ['ATR', 'Upper', 'Lower', 'NATR', 'TRANGE'], key='Sell')
+                        'Volatility Indicators:', ['Upper', 'Lower'], key='Sell')
+                    # if len(st.session_state.trend_indicator) > 0:
+                    #     trend2_buy_list = trend2_buy_list.insert(
+                    #         0, f'{st.session_state.trend_indicator}{st.session_state.trend_period}')
                     trend2_sell = st.multiselect(
-                        'Trend Indicators:', ['Close', 'EMA20', 'EMA60', 'EMA120', 'SMA20', 'SMA60', 'SMA120'], key='Trend2_sell')
-                    price2_comp_sell = st.multiselect('Previous price (1 day before):', [
-                        'Close', 'Open', 'High', 'Low'], key='Price2 Compare Sell')
+                        'Trend Indicators:', trend1_sell_list, key='Trend2_sell')
+                    # price2_comp_sell = st.multiselect('Previous price (1 day before):', [
+                    #     'Close', 'Open', 'High', 'Low'], key='Price2 Compare Sell')
+                    trend3_sell = st.multiselect(
+                        'Trend Indicators:', trend1_sell_list, key='Trend3_sell')
             # st.write('Outside the container2')
             submit = st.form_submit_button('Submit')
 
         if submit:
-            # Buy criteria
-            if len(operator1_buy) > 0 and len(momentum_buy) > 0:
-                data.condition1_buy = ops[operator1_buy[0]](
-                    data[momentum_buy[0]], float(value_buy))
-            else:
-                data.condition1_buy = False
-
-            if len(operator2_buy) > 0 and len(price_buy) > 0 and len(volatility_buy) > 0:
-                data.condition2_buy = ops[operator2_buy[0]](
-                    data[price_buy[0]], data[volatility_buy[0]])
-            else:
-                data.condition2_buy = False
-
-            if len(operator3_buy) > 0 and len(trend1_buy) > 0 and len(trend2_buy) > 0:
-                #! Bypass the commands after that
-                data.condition3_buy = False
-                #! data[SMA10] needs to be defined first regardless of operator
+            #! Assign the custom indicator in the criteria
+            if len(st.session_state.trend_indicator) > 0:
                 data[st.session_state.trend_indicator+str(st.session_state.trend_period)] = eval(
                     "getattr(abstract, f'{st.session_state.trend_indicator}')")(data.Close, st.session_state.trend_period)
-                if operator3_buy[0] == 'crossover':
-                    st.write('trend1_buy[0]', trend1_buy[0])
-                    st.write('trend2_buy[0]', trend2_buy[0])
 
-                    data['test'] = ''
+            # Buy criteria
+            if len(operator1_buy) == 0 or len(momentum_buy) == 0:
+                data.condition1_buy = True
+            else:
+                data.condition1_buy = ops[operator1_buy[0]](
+                    data[momentum_buy[0]], float(value_buy))
+                # st.write('Condition1', data.condition1_buy)
+
+            if len(operator2_buy) == 0 or len(price_buy) == 0 or len(volatility_buy) == 0:
+                data.condition2_buy = True
+            else:
+                data.condition2_buy = ops[operator2_buy[0]](
+                    data[price_buy[0]], data[volatility_buy[0]])
+                # condition2_buy_bt = eval(
+                #     f'self.data.{price_buy[0]} {operator2_buy[0]} self.{volatility_buy[0]}')
+
+            if len(operator3_buy) == 0 or len(trend1_buy) == 0 or len(trend2_buy) == 0:
+                data.condition3_buy = True
+            else:
+                if operator3_buy[0] == 'crossup':
+                    # st.write('st.session_state.trend_indicator',
+                    #          st.session_state.trend_indicator)
+                    # st.write('trend1_buy[0]', trend1_buy[0])
+                    # st.write('trend2_buy[0]', trend2_buy[0])
+                    # st.write(eval(f'data.{trend1_buy[0]}'))
+                    data['condition3_buy'] = ''
                     for i in range(len(data)-1, 0, -1):
-                        data['test'].iloc[i] = eval(
-                            f'data.{trend1_buy[0]}.iloc[{i}] > data.{trend2_buy[0]}.iloc[{i}] and data.{trend1_buy[0]}.iloc[{i-1}] < data.{trend2_buy[0]}.iloc[{i-1}]')
+                        data['condition3_buy'].iloc[i] = eval(
+                            f'data.{trend1_buy[0]}.iloc[{i}] > data.{trend2_buy[0]}.iloc[{i}] and data.{trend1_buy[0]}.iloc[{i-1}] < data.{trend2_buy[0]}.iloc[{i-1}]').astype(str)
+                    # # data.condition3_buy = data['test']
+                    d = {'True': True, 'False': False}
+                    data['condition3_buy'] = data['condition3_buy'].map(d)
+                    # st.write('Condition3', data.condition3_buy)
                     # st.write('Check data frame', data)
-
                 else:
                     data.condition3_buy = ops[operator3_buy[0]](
                         getattr(data, trend1_buy[0]), getattr(data, trend2_buy[0]))
-                    st.write('trend1_buy[0] is', trend1_buy[0])
-                    st.write('trend2_buy[0] is', trend2_buy[0])
-                    st.write('Condition 3 is satisfied', data.condition3_buy)
+                    # st.write('trend1_buy[0] is', trend1_buy[0])
+                    # st.write('trend2_buy[0] is', trend2_buy[0])
+                    # st.write('Condition 3 is satisfied', data.condition3_buy)
 
+            if len(operator4_buy) == 0 or len(price1_buy) == 0 or len(trend3_buy) == 0:
+                data.condition4_buy = True
             else:
-                data.condition3_buy = False
+                if operator4_buy[0] == 'crossup':
+                    # st.write('price1_buy[0]', price1_buy[0])
+                    # st.write('trend3_buy[0]', trend3_buy[0])
+                    data['condition4_buy'] = ''
+                    for i in range(len(data)-1, 0, -1):
+                        data['condition4_buy'].iloc[i] = eval(
+                            f'data.{price1_buy[0]}.iloc[{i}] > data.{trend3_buy[0]}.iloc[{i}] and data.{price1_buy[0]}.iloc[{i-1}] < data.{trend3_buy[0]}.iloc[{i-1}]').astype(str)
+                    # # data.condition3_buy = data['test']
+                    d = {'True': True, 'False': False}
+                    data['condition4_buy'] = data['condition4_buy'].map(d)
+                    # st.write('Condition3', data.condition3_buy)
+                    # st.write('Check data frame', data)
+                else:
+                    data.condition4_buy = ops[operator4_buy[0]](
+                        getattr(data, price1_buy[0]), getattr(data, trend3_buy[0]))
+                    # st.write('trend1_buy[0] is', trend1_buy[0])
+                    # st.write('trend2_buy[0] is', trend2_buy[0])
+                    # st.write('Condition 3 is satisfied', data.condition3_buy)
 
-            if len(operator4_buy) > 0 and len(price1_comp_buy) > 0 and len(price2_comp_buy) > 0:
-
-                # st.write('Show Data', data)
-                # st.write('Show current data',
-                #          f'data.{price1_comp_buy[0]}.iloc[0]')
-                # st.write('Show previous data',
-                #          f'data.{price2_comp_buy[0]}.iloc[-1]')
-                # st.write('Result'. eval(f'data.{price1_comp_buy[0]}.iloc[0] {operator4_buy[0]} data.{price2_comp_buy[0]}.iloc[-1]')
-                # st.write(data)
-                for i in range(len(data)-1, 0, -1):
-                    #     st.write(data.)
-                    #     # data.condition4_buy = ops[operator4_buy[0]](
-                    #     #     getattr(data, price1_comp_buy[0]).iloc[i], getattr(data, price2_comp_buy[0]).iloc[i-1])
-                    #     # data.Close.iloc[0] > data.High.ilco[-1]
-                    # st.write('i Value', i)
-                    data.condition4_buy = eval(
-                        f'data.{price1_comp_buy[0]}.iloc[{i}] {operator4_buy[0]} data.{price2_comp_buy[0]}.iloc[{i-1}]')
-            else:
-                data.condition4_buy = False
+            # if len(operator4_buy) == 0 or len(price1_comp_buy) == 0 or len(price2_comp_buy) == 0:
+            #     data.condition4_buy = True
+            # else:
+            #     for i in range(len(data)-1, 0, -1):
+            #         data.condition4_buy = eval(
+            #             f'data.{price1_comp_buy[0]}.iloc[{i}] {operator4_buy[0]} data.{price2_comp_buy[0]}.iloc[{i-1}]')
 
             #! This is to cater for the situation that nothing is selected
-            if type(data.condition1_buy) == bool and type(data.condition2_buy) == bool and type(data.condition3_buy) == bool and type(data.condition4_buy) == bool:
+            empty_buy = type(data.condition1_buy) == bool and type(data.condition2_buy) == bool and type(
+                data.condition3_buy) == bool and type(data.condition4_buy) == bool
+            if empty_buy == True:
                 st.write('No Buy Criteria is selected!')
             else:
-                st.write('Condition 1 is', data.condition1_buy)
-                st.write('Condition 2 is', data.condition2_buy)
-                st.write('Condition 3 is', data.condition3_buy)
-                st.write('Condition 4 is', data.condition4_buy)
-                data_buy = data.loc[data.condition1_buy |
-                                    data.condition2_buy | data.condition3_buy | data.condition4_buy]
+                # st.write('Condition 1 is', data.condition1_buy)
+                # st.write('Condition 2 is', data.condition2_buy)
+                # st.write('Condition 3 is', data.condition3_buy)
+                # st.write('Condition 4 is', data.condition4_buy)
+                data_buy = data.loc[data.condition1_buy &
+                                    data.condition2_buy & data.condition3_buy & data.condition4_buy]
                 st.write(
                     f'There are total {len(data_buy)} days meet Buy Criteria, they are:', data_buy)
 
@@ -425,46 +438,79 @@ def app():
                                          color="green")),
                     row=1, col=1,
                     secondary_y=False)
-
+            #----------------------------------------------------------------------------------------------#
             # Sell Criteria
             if len(operator1_sell) == 0 or len(momentum_sell) == 0:
                 data.condition1_sell = True
             else:
                 data.condition1_sell = ops[operator1_sell[0]](
                     data[momentum_sell[0]], float(value_sell))
+
             if len(operator2_sell) == 0 or len(price_sell) == 0 or len(volatility_sell) == 0:
                 data.condition2_sell = True
             else:
                 data.condition2_sell = ops[operator2_sell[0]](
                     data[price_sell[0]], data[volatility_sell[0]])
+
             if len(operator3_sell) == 0 or len(trend1_sell) == 0 or len(trend2_sell) == 0:
                 data.condition3_sell = True
             else:
-                data.condition3_sell = ops[operator3_sell[0]](
-                    data[trend1_sell[0]], data[trend2_sell[0]])
-            # st.write(len(operator4_sell))
-            # st.write(len(price1_comp_sell))
-            # st.write(len(price2_comp_sell))
+                if operator3_sell[0] == 'crossdown':
+                    data['condition3_sell'] = ''
+                    for i in range(len(data)-1, 0, -1):
+                        data['condition3_sell'].iloc[i] = eval(
+                            f'data.{trend1_sell[0]}.iloc[{i}] < data.{trend2_sell[0]}.iloc[{i}] and data.{trend1_sell[0]}.iloc[{i-1}] > data.{trend2_sell[0]}.iloc[{i-1}]').astype(str)
+                    # st.write('Check data frame', data)
+                    d = {'True': True, 'False': False}
+                    data['condition3_sell'] = data['condition3_sell'].map(d)
+                    # st.write('Condition3', data.condition3_sell)
+                    # st.write('Check data frame', data)
+                else:
+                    data.condition3_sell = ops[operator3_sell[0]](
+                        getattr(data, trend1_sell[0]), getattr(data, trend2_sell[0]))
+                    # st.write('trend1_buy[0] is', trend1_buy[0])
+                    # st.write('trend2_buy[0] is', trend2_buy[0])
+                    # st.write('Condition 3 is satisfied', data.condition3_buy)
 
-            if len(operator4_sell) == 0 or len(price1_comp_sell) == 0 or len(price2_comp_sell) == 0:
+            if len(operator4_sell) == 0 or len(price1_sell) == 0 or len(trend3_sell) == 0:
                 data.condition4_sell = True
             else:
-                for i in range(len(data)-1, 0, -1):
-                    data.condition4_sell = eval(
-                        f'data.{price1_comp_sell[0]}.iloc[{i}] {operator4_sell[0]} data.{price2_comp_sell[0]}.iloc[{i-1}]')
+                if operator4_sell[0] == 'crossdown':
+                    data['condition4_sell'] = ''
+                    for i in range(len(data)-1, 0, -1):
+                        data['condition4_sell'].iloc[i] = eval(
+                            f'data.{price1_sell[0]}.iloc[{i}] < data.{trend3_sell[0]}.iloc[{i}] and data.{price1_sell[0]}.iloc[{i-1}] > data.{trend3_sell[0]}.iloc[{i-1}]').astype(str)
+                    # st.write('Check data frame', data)
+                    d = {'True': True, 'False': False}
+                    data['condition4_sell'] = data['condition4_sell'].map(d)
+                    # st.write('Condition3', data.condition3_sell)
+                    # st.write('Check data frame', data)
+                else:
+                    data.condition4_sell = ops[operator4_sell[0]](
+                        getattr(data, price1_sell[0]), getattr(data, trend3_sell[0]))
 
-            if type(data.condition1_sell) == bool and type(data.condition2_sell) == bool and type(data.condition3_sell) == bool and type(data.condition4_sell) == bool:
+            # if len(operator4_sell) == 0 or len(price1_comp_sell) == 0 or len(price2_comp_sell) == 0:
+            #     data.condition4_sell = True
+            # else:
+            #     for i in range(len(data)-1, 0, -1):
+            #         data.condition4_sell = eval(
+            #             f'data.{price1_comp_sell[0]}.iloc[{i}] {operator4_sell[0]} data.{price2_comp_sell[0]}.iloc[{i-1}]')
+
+            empty_sell = type(data.condition1_sell) == bool and type(data.condition2_sell) == bool and type(
+                data.condition3_sell) == bool and type(data.condition4_sell) == bool
+
+            if empty_sell == True:
                 st.write('No Sell Criteria is selected!')
             else:
-                data_sell = data.loc[data.condition1_sell |
-                                     data.condition2_sell | data.condition3_sell | data.condition4_sell]
+                data_sell = data.loc[data.condition1_sell &
+                                     data.condition2_sell & data.condition3_sell & data.condition4_sell]
                 st.write(
                     f'There are total {len(data_sell)} days meet Sell Criteria, they are:', data_sell)
 
                 # Chart 2 - Sell Signal
                 fig.add_trace(
                     go.Scatter(
-                        x=data_sell['Datetime'],
+                        x=data_sell.index,
                         y=data_sell['High']*1.10,
                         mode='markers',
                         name='Sell Singal',
@@ -521,14 +567,17 @@ def app():
         def init(self):
             # self.__dict__[momentum_buy[0]] = self.I(
             #     getattr(talib, momentum_buy[0]), self.data.Close, timeperiod=self.n3)
-
+            #--------------------------------------------------------------------------------------------#
+            # Define indicators
             self.SMA20 = self.I(talib.SMA, self.data.Close, self.n1)
+            self.SMA60 = self.I(talib.SMA, self.data.Close, 60)
             self.SMA120 = self.I(talib.SMA, self.data.Close, self.n2)
+            self.EMA20 = self.I(talib.EMA, self.data.Close, self.n1)
+            self.EMA60 = self.I(talib.EMA, self.data.Close, 60)
+            self.EMA120 = self.I(talib.EMA, self.data.Close, self.n2)
             self.RSI = self.I(talib.RSI, self.data.Close, timeperiod=self.n3)
 
-            st.write('Total Data Length is', len(self.data.Close))
-            # st.write('RSI Value', self.RSI)
-            # st.write('RSI Value Length', len(self.RSI))
+            # st.write('Total Data Length is', len(self.data.Close))
             self.Upper, self.Middle, self.Lower = self.I(
                 talib.BBANDS, self.data.Close, timeperiod=20, nbdevup=2, nbdevdn=2, matype=0)
             self.Close = self.data.Close
@@ -539,67 +588,35 @@ def app():
             if len(st.session_state.trend_indicator) > 0:
                 setattr(self, indicator_name, self.I(getattr(
                     talib, f'{st.session_state.trend_indicator}'), self.data.Close, self.n4))
-                st.write(
-                    f'Custom Indicator {indicator_name} has been instantiated successfully')
-            # setattr(self, f'{st.session_state.trend_indicator}'+f'{st.session_state.trend_period}') = self.I(getattr(
-            #     talib, f'{st.session_state.trend_indicator}'), self.data.Close, st.session_state.trend_period)
-            # st.write('Get attributes', getattr(
-            #     self, st.session_state.trend_indicator+str(st.session_state.trend_period)))
-            # getattr(self, st.session_state.trend_indicator+str(st.session_state.trend_period)) = self.I(getattr(talib, f'{trend_indicator}'))(self.data.Close, st.session_state.trend_period)
+                # st.write(
+                #     f'Custom Indicator {indicator_name} has been instantiated successfully')
 
-            # st.write(getattr(self, price_buy[0]))
-            # st.write('Close length', len(getattr(self, price_buy[0])))
-            # st.write(getattr(self, volatility_buy[0]))
-            # st.write('Lower length', len(getattr(self, volatility_buy[0])))
-            # st.write('Lower length direct', len(self.Lower))
-            # self.__dict__[trend1_buy[0]] = self.I(
-            #     getattr(talib, trend1_buy[0][0:3]), self.data.Close, self.n1)
-            # self.__dict__[trend2_buy[0]] = self.I(
-            #     getattr(talib, trend2_buy[0][0:3]), self.data.Close, self.n2)
-
-            # self.sma1 = self.I(talib.SMA, self.data.Close, self.n1)
-            # self.sma2 = self.I(talib.SMA, self.data.Close, self.n2)
-
-        #   self.order = None
-        #   self.buy_signal
-            # st.write('Lower length before Next', len(self.Lower))
-
-            #! Have to take the input from web interface and put all the judgement here
-            # st.write('Lower length in Next', len(self.Lower))
-
-            # condiction0 = eval('self.RSI <= 50')
-            # st.write('Condiction0 Length', len(condiction0))
-            # st.write('Condiction0', condiction0)
-            # print('No position and I will buy now')
-            # # print('met criteria', not self.position)
-            # self.buy()
-
-            if len(operator1_buy) > 0 and len(momentum_buy) > 0:
-                # self.condition1_buy_bt = ops[operator1_buy[0]](
-                #     getattr(self, momentum_buy[0]), float(value_buy))
+            #--------------------------------------------------------------------------------------------#
+            # Define Buy Criteria for Backtest.py
+            if len(operator1_buy) == 0 or len(momentum_buy) == 0:
+                self.condition1_buy_bt = True
+            else:
                 self.condition1_buy_bt = eval(
                     f'self.{momentum_buy[0]} {operator1_buy[0]} {value_buy}')
+                # self.condition1_buy_bt = ops[operator1_buy[0]](
+                #     getattr(self, momentum_buy[0]), float(value_buy))
                 # st.write('momentum_buy[0] value is', momentum_buy[0])
-                # st.write('self.momentum_buy[0]',
-                #          getattr(self, momentum_buy[0]))
-                # st.write('self.momentum_buy[0] Length',
-                #          len(getattr(self, momentum_buy[0])))
                 # st.write('Value_buy is', float(value_buy))
                 # st.write('Condition1 Operator1_buy', operator1_buy[0])
                 # st.write('Condition 1', self.condition1_buy_bt)
                 # st.write('Condition 1 length', len(self.condition1_buy_bt))
-            else:
-                self.condition1_buy_bt = True
 
-            if len(operator2_buy) > 0 and len(price_buy) > 0 and len(volatility_buy) > 0:
+            if len(operator2_buy) == 0 or len(price_buy) == 0 or len(volatility_buy) == 0:
+                self.condition2_buy_bt = True
+            else:
+                self.condition2_buy_bt = eval(
+                    f'self.data.{price_buy[0]} {operator2_buy[0]} self.{volatility_buy[0]}')
                 # st.write('Operator is', operator2_buy[0])
                 # # st.write('Type of the Operator is',
                 #          type(operator2_buy[0]))
                 #! working one on operator!
                 # self.condition2_buy_bt = eval(
                 #     f'self.data.Close {operator2_buy[0]} self.Upper')
-                self.condition2_buy_bt = eval(
-                    f'self.data.{price_buy[0]} {operator2_buy[0]} self.{volatility_buy[0]}')
                 # st.write('Condition 2', self.condition2_buy_bt)
                 # st.write('Condition 2 length', len(self.condition2_buy_bt))
                 # self.condition2_buy_bt = eval(
@@ -616,32 +633,47 @@ def app():
                 # st.write(ops[operator2_buy[0]])
                 # self.condition2_buy_bt = ops[operator2_buy[0]](
                 #     getattr(self, price_buy[0]), getattr(self, volatility_buy[0]))
-            else:
-                self.condition2_buy_bt = True
 
-            if len(operator3_buy) > 0 and len(trend1_buy) > 0 and len(trend2_buy) > 0:
-                if operator3_buy[0] == 'crossover':
+            if len(operator3_buy) == 0 or len(trend1_buy) == 0 or len(trend2_buy) == 0:
+                self.condition3_buy_bt = True
+            else:
+                if operator3_buy[0] == 'crossup':
+                    self.condition3_buy_bt = eval(
+                        f'crossover(self.{trend1_buy[0]}, self.{trend2_buy[0]})')
+                    #! Alternative statement
+                    # setattr(self, 'condition3_buy_bt', eval(
+                    #         f'self.{trend1_buy[0]}[-1] > self.{trend2_buy[0]}[-2] and self.{trend1_buy[0]}[-2] < self.{trend2_buy[0]}[-3]'))
+                    # st.write('Condition3', self.condition3_buy_bt)
+
+                    # st.write('Choose Crossover')
+                    # st.write(
+                    #     'Eval string is', f'{operator3_buy[0]}(self.{trend1_buy[0]}, self.{trend2_buy[0]})')
                     # st.write('Condition3 operator3_buy', operator3_buy[0])
                     # st.write('Condition3 trend1_buy', trend1_buy[0])
+                    # # st.write('Condition3 self.SMA20', self.SMA20)
+                    # # st.write('Condition3 self.SMA120', self.SMA120)
+                    # st.write('Crossover function',
+                    #          crossover(self.SMA20, self.SMA120))
                     # st.write('Condition3 trend2_buy', trend2_buy[0])
-                    self.condition3_buy_bt = eval(
-                        f'{operator3_buy[0]}(self.data.{trend1_buy[0]}, self.{trend2_buy[0]})')
-
-                    # st.write('Condition 3', self.condition3_buy_bt)
+                    # st.write('Condition3 condition3_buy_bt',
+                    #          eval(f'{operator3_buy[0]}(self.{trend1_buy[0]}, self.{trend2_buy[0]})'))
                 else:
+                    self.condition3_buy_bt = eval(
+                        f'self.{trend1_buy[0]} {operator3_buy[0]} self.{trend2_buy[0]}')
+                    # st.write('Condition 3', self.condition3_buy_bt)
                     # self.condition3_buy_bt = ops[operator3_buy[0]](
                     #     getattr(self, trend1_buy[0]), getattr(self, trend2_buy[0]))
-                    st.write('Condition3 trend1_buy', trend1_buy[0])
-                    st.write('Condition3 trend2_buy', trend2_buy[0])
-                    st.write('Condition3 Operator3_buy', operator3_buy[0])
-                    st.write('Self.Close direct', self.Close)
-                    st.write('Self.Close direct length', len(self.Close))
-                    st.write('Self.Close', getattr(self, trend1_buy[0]))
-                    st.write('Self.Close length', len(
-                        getattr(self, trend1_buy[0])))
-                    st.write('Self.SMA10', getattr(self, trend2_buy[0]))
-                    st.write('Self.SMA10 length', len(
-                        getattr(self, trend2_buy[0])))
+                    # st.write('Condition3 trend1_buy', trend1_buy[0])
+                    # st.write('Condition3 trend2_buy', trend2_buy[0])
+                    # st.write('Condition3 Operator3_buy', operator3_buy[0])
+                    # st.write('Self.Close direct', self.Close)
+                    # st.write('Self.Close direct length', len(self.Close))
+                    # st.write('Self.Close', getattr(self, trend1_buy[0]))
+                    # st.write('Self.Close length', len(
+                    #     getattr(self, trend1_buy[0])))
+                    # st.write('Self.SMA10', getattr(self, trend2_buy[0]))
+                    # st.write('Self.SMA10 length', len(
+                    #     getattr(self, trend2_buy[0])))
                     # st.write('operator3_buy', operator3_buy[0])
                     # st.write('self.trend1_buy', getattr(self, trend1_buy[0]))
                     # st.write('self.trend1_buy length', len(
@@ -649,35 +681,156 @@ def app():
                     # st.write('self.trend2_buy', getattr(self, trend2_buy[0]))
                     # st.write('self.trend2_buy length', len(
                     #     getattr(self, trend2_buy[0])))
-                    self.condition3_buy_bt = eval(
-                        f'self.data.{trend1_buy[0]} {operator3_buy[0]} self.{trend2_buy[0]}')
-                    st.write('Condition 3', self.condition3_buy_bt)
+
                     # st.write('Condition 3 length', len(self.condition3_buy_bt))
                     # self.condition3_buy_bt = ops[operator3_buy[0]](
                     #     getattr(self, trend1_buy[0]), getattr(self, trend2_buy[0]))
-            else:
-                self.condition3_buy_bt = True
 
-            if len(operator4_buy) > 0 and len(price1_comp_buy) > 0 and len(price2_comp_buy) > 0:
-                self.condition4_buy_bt = eval(
-                    f'self.{price1_comp_buy[0]}[-1] {operator4_buy[0]} self.{price2_comp_buy[-1]}[-2]')
-                st.write('Condition 4', self.condition4_buy_bt)
-                st.write('Condition 4 length', len(self.condition4_buy_bt))
-            else:
+            if len(operator4_buy) == 0 or len(price1_buy) == 0 or len(trend3_buy) == 0:
                 self.condition4_buy_bt = True
+            else:
+                if operator4_buy[0] == 'crossup':
+                    self.condition4_buy_bt = eval(
+                        f'crossover(self.data.{price1_buy[0]}, self.{trend3_buy[0]})')
+                else:
+                    self.condition4_buy_bt = eval(
+                        f'self.data.{price1_buy[0]} {operator4_buy[0]} self.{trend3_buy[0]}')
 
-            # st.write('All condictions', condiction0 and self.condition1_buy_bt and self.condition2_buy_bt and self.condition3_buy_bt and self.condition4_buy_bt)
-            # st.write('Condiction 1', condition1_buy_bt)
-            # st.write('Condiction 2', condition2_buy_bt)
-            # condiction0 and self.condition1_buy_bt and self.condition2_buy_bt and self.condition3_buy_bt and self.condition4_buy_bt)
-            self.empty_judgement = type(self.condition1_buy_bt) == bool and type(self.condition2_buy_bt) == bool and type(
+            # if len(operator4_buy) == 0 or len(price1_comp_buy) == 0 or len(price2_comp_buy) == 0:
+            #     self.condition4_buy_bt = True
+            # else:
+            #     self.condition4_buy_bt = eval(
+            #         f'self.{price1_comp_buy[0]}[-1] {operator4_buy[0]} self.{price2_comp_buy[0]}[-2]')
+            #     st.write('Condition 4', self.condition4_buy_bt)
+            #     st.write('Condition 4 length', len(self.condition4_buy_bt))
+
+            #------------------------------------------------------------------------------------------------#
+            # Define Sell Condition
+            if len(operator1_sell) == 0 or len(momentum_sell) == 0:
+                self.condition1_sell_bt = True
+            else:
+                self.condition1_sell_bt = eval(
+                    f'self.{momentum_sell[0]} {operator1_sell[0]} {value_sell}')
+                # self.condition1_sell_bt = ops[operator1_sell[0]](
+                #     getattr(self, momentum_sell[0]), float(value_sell))
+
+            if len(operator2_sell) == 0 or len(price_sell) == 0 or len(volatility_sell) == 0:
+                self.condition2_sell_bt = True
+            else:
+                self.condition2_sell_bt = eval(
+                    f'self.data.{price_sell[0]} {operator2_sell[0]} self.{volatility_sell[0]}')
+                # st.write('Operator is', operator2_buy[0])
+                # # st.write('Type of the Operator is',
+                #          type(operator2_buy[0]))
+                #! working one on operator!
+                # self.condition2_buy_bt = eval(
+                #     f'self.data.Close {operator2_buy[0]} self.Upper')
+
+            if len(operator3_sell) == 0 or len(trend1_sell) == 0 or len(trend2_sell) == 0:
+                self.condition3_sell_bt = True
+            else:
+                if operator3_sell[0] == 'crossdown':
+                    self.condition3_sell_bt = eval(
+                        f'crossover (self.{trend2_sell[0]}, self.{trend1_sell[0]})')
+                else:
+                    self.condition3_sell_bt = eval(
+                        f'self.data.{trend1_sell[0]} {operator3_sell[0]} self.{trend2_sell[0]}')
+
+            if len(operator4_sell) == 0 or len(price1_sell) == 0 or len(trend3_sell) == 0:
+                self.condition4_sell_bt = True
+            else:
+                if operator4_sell[0] == 'crossdown':
+                    self.condition4_sell_bt = eval(
+                        f'crossover (self.data.{price1_sell[0]}, self.{trend3_sell[0]})')
+                else:
+                    self.condition4_sell_bt = eval(
+                        f'self.data.{price1_sell[0]} {operator4_sell[0]} self.{trend3_sell[0]}')
+
+            # self.condition4_sell_bt = True
+            # if len(operator4_sell) == 0 or len(price1_comp_sell) == 0 or len(price2_comp_sell) == 0:
+            #     self.condition4_sell_bt = True
+            # else:
+            #     self.condition4_sell_bt = eval(
+            #         f'self.{price1_comp_buy[0]}[-1] {operator4_sell[0]} self.{price2_comp_sell[0]}[-2]')
+
+           #--------------------------------------------------------------------------------------------#
+            # Define whether there is no input
+            self.empty_buy = type(self.condition1_buy_bt) == bool and type(self.condition2_buy_bt) == bool and type(
                 self.condition3_buy_bt) == bool and type(self.condition4_buy_bt) == bool
 
-            if self.empty_judgement == True:
+            if self.empty_buy == True:
                 st.write('No Buy Criteria is selected!')
 
+            self.empty_sell = type(self.condition1_sell_bt) == bool and type(self.condition2_sell_bt) == bool and type(
+                self.condition3_sell_bt) == bool and type(self.condition4_sell_bt) == bool
+
+            if self.empty_sell == True:
+                st.write('No Sell Criteria is selected!')
+
+           #--------------------------------------------------------------------------------------------#
+            # Define criteria and holding
+            st.write(
+                'The default behaivor is system will Buy/Sell whenever the criteria is met, regardless position status.')
+            agree_buy = st.checkbox(
+                'Buy only when there is no position', key='check_buy')
+            if agree_buy:
+                self.decision_buy = 'not self.position'  # Not in a position
+                # st.write('Not self.position value', self.decision_buy)
+            else:
+                self.decision_buy = 'True'
+
+            agree_sell = st.checkbox(
+                'Sell only when there is a position', key='check_sell')
+            if agree_sell:
+                self.decision_sell = 'self.position'
+                # st.write('Self.position value', self.decision_sell)
+            else:  # Default value
+                self.decision_sell = 'True'
+
         def next(self):
-            if self.empty_judgement != True and self.condition1_buy_bt and self.condition2_buy_bt and self.condition3_buy_bt and self.condition4_buy_bt:
+            #! Put in condition3 inside one more time is for the 'crossover' function
+            if len(operator3_buy) == 0 or len(trend1_buy) == 0 or len(trend2_buy) == 0:
+                self.condition3_buy_bt = True
+            else:
+                if operator3_buy[0] == 'crossup':
+                    self.condition3_buy_bt = eval(
+                        f'crossover(self.{trend1_buy[0]}, self.{trend2_buy[0]})')
+                else:
+                    self.condition3_buy_bt = eval(
+                        f'self.{trend1_buy[0]} {operator3_buy[0]} self.{trend2_buy[0]}')
+                    # st.write('Condition 3', self.condition3_buy_bt)
+
+            if len(operator4_buy) == 0 or len(price1_buy) == 0 or len(trend3_buy) == 0:
+                self.condition4_buy_bt = True
+            else:
+                if operator4_buy[0] == 'crossup':
+                    self.condition4_buy_bt = eval(
+                        f'crossover(self.data.{price1_buy[0]}, self.{trend3_buy[0]})')
+                else:
+                    self.condition4_buy_bt = eval(
+                        f'self.data.{price1_buy[0]} {operator4_buy[0]} self.{trend3_buy[0]}')
+
+            if len(operator3_sell) == 0 or len(trend1_sell) == 0 or len(trend2_sell) == 0:
+                self.condition3_sell_bt = True
+            else:
+                if operator3_sell[0] == 'crossdown':
+                    self.condition3_sell_bt = eval(
+                        f'crossover (self.{trend2_sell[0]}, self.{trend1_sell[0]})')
+                else:
+                    self.condition3_sell_bt = eval(
+                        f'self.{trend1_sell[0]} {operator3_sell[0]} self.{trend2_sell[0]}')
+
+            if len(operator4_sell) == 0 or len(price1_sell) == 0 or len(trend3_sell) == 0:
+                self.condition4_sell_bt = True
+            else:
+                if operator4_sell[0] == 'crossdown':
+                    self.condition4_sell_bt = eval(
+                        f'crossover (self.data.{price1_sell[0]}, self.{trend3_sell[0]})')
+                else:
+                    self.condition4_sell_bt = eval(
+                        f'self.data.{price1_sell[0]} {operator4_sell[0]} self.{trend3_sell[0]}')
+
+            if self.empty_buy != True and self.condition1_buy_bt and self.condition2_buy_bt and self.condition3_buy_bt and self.condition4_buy_bt and eval(self.decision_buy):
                 # if self.RSI <= 25:
                 # if ops[operator3_buy[0]](self.__dict__[trend1_buy[0]], self.__dict__[trend2_buy[0]]):
                 self.buy()
@@ -686,38 +839,10 @@ def app():
                 #     # print('met criteria', not self.position)
                 #     self.buy()
 
-            #------------------------------------------------------------------------------------------------#
-            # Define Sell Condition
-            if len(operator1_sell) == 0 or len(momentum_sell) == 0:
-                self.condition1_sell_bt = True
-            else:
-                self.condition1_sell_bt = ops[operator1_sell[0]](
-                    getattr(self, momentum_sell[0]), float(value_sell))
-
-            if len(operator2_sell) == 0 or len(price_sell) == 0 or len(volatility_sell) == 0:
-                self.condition2_sell_bt = True
-            else:
-                # st.write('Operator is', operator2_buy[0])
-                # # st.write('Type of the Operator is',
-                #          type(operator2_buy[0]))
-                #! working one on operator!
-                # self.condition2_buy_bt = eval(
-                #     f'self.data.Close {operator2_buy[0]} self.Upper')
-
-                self.condition2_sell_bt = eval(
-                    f'self.data.{price_sell[0]} {operator2_sell[0]} self.{volatility_sell[0]}')
-
-            if len(operator3_sell) == 0 or len(trend1_sell) == 0 or len(trend2_sell) == 0:
-                self.condition3_sell_bt = True
-            else:
-                self.condition3_sell_bt = ops[operator3_sell[0]](
-                    getattr(self, trend1_sell[0]), getattr(self, trend2_sell[0]))
-
-            if len(operator4_sell) == 0 or len(price1_comp_sell) == 0 or len(price2_comp_sell) == 0:
-                self.condition4_sell_bt = True
-            else:
-                self.condition4_sell_bt = eval(
-                    f'self.{price1_comp_sell[0]}[0] {operator4_sell[0]} self.{price2_comp_sell[-1]}[-1]')
+            if self.empty_sell != True and self.condition1_sell_bt and self.condition2_sell_bt and self.condition3_sell_bt and self.condition4_sell_bt and eval(self.decision_sell):
+                # if self.RSI <= 25:
+                # if ops[operator3_buy[0]](self.__dict__[trend1_buy[0]], self.__dict__[trend2_buy[0]]):
+                self.sell()
 
             # if self.condition1_sell_bt and self.condition2_sell_bt and self.condition3_sell_bt and self.condition4_sell_bt:
             #     # if ops[operator3_buy[0]](self.__dict__[trend1_buy[0]], self.__dict__[trend2_buy[0]]):
@@ -739,7 +864,10 @@ def app():
             # elif crossover(self.sma2, self.sma1):
             #     self.position.close()
 
-    bt = Backtest(data, Custom, cash=100000,
+            #--------------------------------------------------------------------------------------------#
+            # Define Trading related parameters
+    amount = st.number_input('Initial Invested Amount', value=100000)
+    bt = Backtest(data, Custom, cash=amount,
                   commission=0, exclusive_orders=True)
     output = bt.run()
     output.to_csv('temp.csv')
