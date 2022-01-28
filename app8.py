@@ -20,8 +20,8 @@ from backtesting.lib import crossover
 
 
 def app():
-    st.title('Cryptocurrency')
-    st.subheader('- Algorithmic trading strategies and Backtesting')
+    # st.title('Cryptocurrency')
+    st.title('Algorithmic trading strategies and Backtesting')
     st.markdown("***")
 
     # st.text("")
