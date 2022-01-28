@@ -4,7 +4,8 @@ import notes
 
 import streamlit as st
 PAGES = {
-    "Cryptocurrency": app8,
+    "Fundamental Analysis": app1,
+    "Algorithmic Trading": app8,
     "Release Notes": notes,
 }
 st.sidebar.title('Navigation')
