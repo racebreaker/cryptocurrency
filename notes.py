@@ -8,11 +8,7 @@ def app():
     st.write("""
         - 2022.01.15 First version 1.0 go online!
         - 2022.01.16 v1.1 - Fixed some minor issues in Algorithmic Trading module
-        - 2022.01.28 v1.2 - Add Fundamental Analysis module with 2 basic functions
 
-        - Fundamental Analysis
-            1. Company Scoring - Radar Chart
-            2. Company Fundamental Overview - Most Recent Quarter
         - Algorithmic Trading
             1. Candlestick and Analysis Chart
             2. Add Technical Indicators
