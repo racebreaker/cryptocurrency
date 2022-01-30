@@ -1,1 +1,1 @@
-#Algorithmic trading strategies and Backtesting
+Algorithmic trading strategies and Backtesting
