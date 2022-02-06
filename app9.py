@@ -17,7 +17,7 @@ def app():
             2. Forecast FCF directly (using analyst forecast) rather than forecast the financial statement
             """)
 
-    quote_input = st.text_input('Please Input Stock Quote:', )
+    quote_input = st.text_input('Please Input Stock Quote:', value='AAPL')
     # st.write("Quote Input value is", quote_input == '')
 
     # Take the first value in Dropdown_dcf list
