@@ -114,25 +114,25 @@ def app():
         if 'Long Term Debt' in ticker.balance_sheet.index and 'Short Long Term Debt' in ticker.balance_sheet.index:
             if not ticker.balance_sheet.loc['Short Long Term Debt'][0] > 0:
                 ticker.balance_sheet.loc['Short Long Term Debt'][0] = 0
-                st.write('Short Long Term Debt value is 0')
+                # st.write('Short Long Term Debt value is 0')
             elif not ticker.balance_sheet.loc['Long Term Debt'][0] > 0:
                 ticker.balance_sheet.loc['Long Term Debt'][0] = 0
-                st.write('Long Term Debt value is 0')
-            else:
+                # st.write('Long Term Debt value is 0')
 
-                D = ticker.balance_sheet.loc['Long Term Debt'] + \
-                    ticker.balance_sheet.loc['Short Long Term Debt']
-                rD = -ticker.financials.loc['Interest Expense'] / D
-                st.write('Long Term Debt is',
-                         ticker.balance_sheet.loc['Long Term Debt'][0])
-                st.write('Short Long Term Debt',
-                         ticker.balance_sheet.loc['Short Long Term Debt'][0])
-                st.write('Debt Value is', D[0])
-                # print('Debt Value is', D[0])
+            D = ticker.balance_sheet.loc['Long Term Debt'] + \
+                ticker.balance_sheet.loc['Short Long Term Debt']
+            rD = -ticker.financials.loc['Interest Expense'] / D
+            st.write('Long Term Debt is',
+                     ticker.balance_sheet.loc['Long Term Debt'][0])
+            st.write('Short Long Term Debt',
+                     ticker.balance_sheet.loc['Short Long Term Debt'][0])
+            st.write('Debt Value is', D[0])
+            # print('Debt Value is', D[0])
         else:
             rD = [0]
             D = [0]
-            st.write('No Long Term Debt and No Short Long Term Debt')
+            st.write(
+                'There are No Long Term Debt and No Short Long Term Debt items in the Balance Sheet')
         # print('Cost of Debt, rD is', rD[0])
         st.write('Cost of Debt, rD is', rD[0])
         st.write('Debt Value is', D[0])
@@ -240,8 +240,13 @@ def app():
         st.write('Intrinsic Value 10-year is', intrinsic_10y)
         st.write('Intrinsic Value 20-year is', npv_20y)
 
-        share_ost = si.get_stats(quote_input).loc[si.get_stats(quote_input)[
-            'Attribute'] == 'Shares Outstanding 5']['Value'].values[0]
+        if type(si.get_stats(quote_input).loc[si.get_stats(quote_input)[
+                'Attribute'] == 'Implied Shares Outstanding 6']['Value'].values[0]) == float:
+            share_ost = si.get_stats(quote_input).loc[si.get_stats(quote_input)[
+                'Attribute'] == 'Shares Outstanding 5']['Value'].values[0]
+        else:
+            share_ost = si.get_stats(quote_input).loc[si.get_stats(quote_input)[
+                'Attribute'] == 'Implied Shares Outstanding 6']['Value'].values[0]
         # share_ost = overview_info.loc[overview_info.Quote ==
         #                                 dropdown_dcf[0]]['Shares Outstanding'].values[0]
         share_ost_input = st.text_input(
