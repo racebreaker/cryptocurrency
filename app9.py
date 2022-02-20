@@ -9,12 +9,14 @@ import yfinance as yf
 
 def app():
     st.title('Fundamental Analysis - Company Valuation (DCF)')
+    st.markdown("***")
     # new_title = '<p style="font-size: 20px;">**Valuation - DCF Calculation**</p>'
     # st.markdown(new_title, unsafe_allow_html=True)
     st.write("""
         - Assumptions
-            1. FCF number will be from Cash flow statement directly
-            2. Forecast FCF directly (using analyst forecast) rather than forecast the financial statement
+            1. Usd FCF number to calculate Enterprise value. It will minus the debt number to get equity intrinsic value
+            2. FCF number will be derived from Cash flow statement directly
+            3. Forecast FCF directly (using analyst forecast) rather than forecast the financial statement
             """)
 
     quote_input = st.text_input('Please Input Stock Quote:', value='AAPL')
@@ -126,7 +128,7 @@ def app():
                      ticker.balance_sheet.loc['Long Term Debt'][0])
             st.write('Short Long Term Debt',
                      ticker.balance_sheet.loc['Short Long Term Debt'][0])
-            st.write('Debt Value is', D[0])
+            st.write('Total Debt Value is', D[0])
             # print('Debt Value is', D[0])
         else:
             rD = [0]
@@ -206,8 +208,9 @@ def app():
 
         #------------------------------------------------------------------------------------------#
         st.subheader(
-            '**Step 4 - Calculate Discount NPV and Terminal Value**')
+            'Step 4 - Calculate Discount NPV and Terminal Value, Formula: NPV = CF1/(1+r)^1 + CF2/(1+r)^2 +...+ CFn/(1+r)^n')
         npv_5y = numpy_financial.npv(wacc_input_real, FCF_list_5y)
+        # If future cashflows are used, the first cashflow values[0] must be zeroed and added to the net present value of the future cashflows
         st.write('Net Present Value 5-year is', npv_5y)
         terminal_value_discounted_5y = terminal_value_5y / \
             (1+wacc_input_real)**6  # Start from the 11th year
@@ -233,12 +236,13 @@ def app():
         st.write(
             f'Discounted 11-20 year Value weightage is {(npv_20y-npv_10y)/npv_20y*100:.2f}%')
         #------------------------------------------------------------------------------------------#
-        st.subheader('**Step 5 - Calculate Intrinsic Value per Share**')
+        st.subheader(
+            'Step 5 - Calculate Intrinsic Value per Share, Formula: Intrinsic_Value = NPV + Terminal_Discounted_Value, Equity Value = Enterprise Value - Debt Value + Cash')
         intrinsic_5y = npv_5y + terminal_value_discounted_5y
         intrinsic_10y = npv_10y + terminal_value_discounted_10y
-        st.write('Intrinsic Value 5-year is', intrinsic_5y)
-        st.write('Intrinsic Value 10-year is', intrinsic_10y)
-        st.write('Intrinsic Value 20-year is', npv_20y)
+        # st.write('Intrinsic Value 5-year is', intrinsic_5y)
+        # st.write('Intrinsic Value 10-year is', intrinsic_10y)
+        # st.write('Intrinsic Value 20-year is', npv_20y)
 
         if type(si.get_stats(quote_input).loc[si.get_stats(quote_input)[
                 'Attribute'] == 'Implied Shares Outstanding 6']['Value'].values[0]) == float:
@@ -258,9 +262,18 @@ def app():
             share_ost_real = float(share_ost_input[:-1]) * 1000000
 
         st.write('Share Oustanding Value is', share_ost_real)
-        intrinsic_pershare_5y = intrinsic_5y * 1000000000 / share_ost_real
-        intrinsic_pershare_10y = intrinsic_10y * 1000000000 / share_ost_real
-        intrinsic_pershare_20y = npv_20y * 1000000000 / share_ost_real
+        debt_pershare = D[0] / share_ost_real
+        st.write('Debt Per Share is', debt_pershare)
+        cash = ticker.balance_sheet.loc['Cash']
+        cash_pershare = cash[0] / share_ost_real
+        st.write('Cash Per Share is', cash_pershare)
+
+        intrinsic_pershare_5y = intrinsic_5y * \
+            1000000000 / share_ost_real - debt_pershare + cash_pershare
+        intrinsic_pershare_10y = intrinsic_10y * \
+            1000000000 / share_ost_real - debt_pershare + cash_pershare
+        intrinsic_pershare_20y = npv_20y * 1000000000 / \
+            share_ost_real - debt_pershare + cash_pershare
 
         st.write('Intrinsic Value 5-year Per Share is',
                  intrinsic_pershare_5y)

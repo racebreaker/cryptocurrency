@@ -8,7 +8,8 @@ def app():
     st.write("""
         - 2022.01.15 First version 1.0 go online!
         - 2022.01.16 v1.1 - Fixed some minor issues in Algorithmic Trading module
-        - 2022.02.06 v2.0 - Add Fundamental Analysis Company Valuation (DCF) module
+        - 2022.02.06 v2.0 - Added Fundamental Analysis Company Valuation (DCF) module
+        - 2022.02.20 v3.0 - Added Microeconomics Data and Updated DCF calculation
 
         - Algorithmic Trading
             1. Candlestick and Analysis Chart
@@ -27,4 +28,5 @@ def app():
                 - Buy only when there is no position
                 - Sell only when there is no position
         - Fundamental Analysis - Company Valuation (DCF)
+        - Microeconomics Data
             """)
